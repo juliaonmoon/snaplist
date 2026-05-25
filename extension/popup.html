@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SnapList</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="header">
+    <div class="logo">📸 SnapList</div>
+    <div id="status" class="status">checking…</div>
+  </div>
+
+  <div id="hint" class="hint hidden"></div>
+
+  <div id="empty" class="empty hidden">
+    No draft listings found. Snap a photo in the SnapList app first.
+  </div>
+
+  <div id="list" class="list"></div>
+
+  <div class="footer">
+    Backend: <code id="api-url">http://localhost:8000</code>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

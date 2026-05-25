@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Mock FB Marketplace</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; padding: 24px; max-width: 600px; margin: auto; }
+    .field { margin-bottom: 16px; }
+    label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
+    input, textarea, [role="combobox"] {
+      width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 6px;
+      font-size: 14px; background: white; box-sizing: border-box; cursor: text;
+    }
+    [role="combobox"] { cursor: pointer; min-height: 40px; display: flex; align-items: center; }
+    [role="dialog"] {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      background: white; border: 1px solid #ccc; border-radius: 8px;
+      padding: 16px; min-width: 320px; box-shadow: 0 8px 32px rgba(0,0,0,.2);
+      z-index: 100; display: none;
+    }
+    [role="dialog"].open { display: block; }
+    [role="option"] { padding: 10px; cursor: pointer; border-radius: 4px; }
+    [role="option"]:hover { background: #f0f0f0; }
+    .back { font-size: 12px; color: #888; cursor: pointer; margin-bottom: 8px; }
+    #log { margin-top: 20px; padding: 12px; background: #f7f7f7; border-radius: 6px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 200px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h2>Mock FB Marketplace · Item for sale</h2>
+
+  <div class="field">
+    <label>Title</label>
+    <input type="text" id="title-input" />
+  </div>
+
+  <div class="field">
+    <label>Price</label>
+    <input type="number" id="price-input" />
+  </div>
+
+  <div class="field">
+    <label>Description</label>
+    <textarea id="desc-input" rows="3"></textarea>
+  </div>
+
+  <div class="field">
+    <label>Category</label>
+    <div role="combobox" aria-haspopup="dialog" id="category-trigger" tabindex="0">
+      <span id="category-display" style="color:#888">Choose a category</span>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Condition</label>
+    <div role="combobox" aria-haspopup="listbox" id="condition-trigger" tabindex="0">
+      <span id="condition-display" style="color:#888">Choose</span>
+    </div>
+  </div>
+
+  <div id="condition-listbox" role="listbox" style="display:none; border:1px solid #ccc; border-radius:6px; margin-top:4px; background:white;">
+    <div role="option" data-value="new">New</div>
+    <div role="option" data-value="like_new">Used - Like New</div>
+    <div role="option" data-value="good">Used - Good</div>
+    <div role="option" data-value="fair">Used - Fair</div>
+  </div>
+
+  <!-- Category tree modal -->
+  <div role="dialog" id="category-modal" aria-label="Choose category">
+    <div class="back" id="back-btn" style="display:none">← Back</div>
+    <div id="category-level"></div>
+  </div>
+
+  <div id="log"></div>
+
+  <script>
+    // Mini facsimile of FB's hierarchical category picker.
+    const TAXONOMY = {
+      "Home & Garden": {
+        "Furniture": {
+          "Chairs": {
+            "Lounge Chairs": null,
+            "Dining Chairs": null,
+            "Office Chairs": null,
+          },
+          "Tables": { "Coffee Tables": null, "Dining Tables": null },
+          "Sofas & Loveseats": null,
+        },
+        "Home Decor": { "Lamps": null, "Rugs": null },
+      },
+      "Electronics": {
+        "Computers & Tablets": { "Laptops": null, "Tablets": null },
+      },
+      "Miscellaneous": null,
+    };
+
+    const log = (...a) => {
+      console.log(...a);
+      const el = document.getElementById("log");
+      el.textContent += a.map(x => typeof x === "string" ? x : JSON.stringify(x)).join(" ") + "\n";
+      el.scrollTop = el.scrollHeight;
+    };
+
+    // Track current navigation stack
+    let pathStack = [];
+
+    function getNodeAtPath(path) {
+      let node = TAXONOMY;
+      for (const p of path) node = node[p];
+      return node;
+    }
+
+    function renderLevel() {
+      const node = getNodeAtPath(pathStack);
+      const container = document.getElementById("category-level");
+      container.innerHTML = "";
+      document.getElementById("back-btn").style.display = pathStack.length ? "block" : "none";
+
+      if (node === null) {
+        // Leaf — finalize
+        const final = pathStack.join(" > ");
+        document.getElementById("category-display").textContent = pathStack[pathStack.length - 1];
+        document.getElementById("category-display").style.color = "black";
+        document.getElementById("category-modal").classList.remove("open");
+        log("[mock] picked category:", final);
+        pathStack = [];
+        return;
+      }
+      for (const key of Object.keys(node)) {
+        const el = document.createElement("div");
+        el.setAttribute("role", "option");
+        el.textContent = key;
+        el.onclick = () => {
+          pathStack.push(key);
+          // Simulate FB's async render delay
+          setTimeout(renderLevel, 100);
+        };
+        container.appendChild(el);
+      }
+    }
+
+    document.getElementById("category-trigger").addEventListener("click", () => {
+      pathStack = [];
+      renderLevel();
+      document.getElementById("category-modal").classList.add("open");
+      log("[mock] category modal opened");
+    });
+
+    document.getElementById("back-btn").onclick = () => {
+      pathStack.pop();
+      renderLevel();
+    };
+
+    // Condition: simple flat listbox
+    document.getElementById("condition-trigger").addEventListener("click", () => {
+      const lb = document.getElementById("condition-listbox");
+      lb.style.display = lb.style.display === "none" ? "block" : "none";
+    });
+    document.querySelectorAll("#condition-listbox [role='option']").forEach(opt => {
+      opt.onclick = () => {
+        document.getElementById("condition-display").textContent = opt.textContent;
+        document.getElementById("condition-display").style.color = "black";
+        document.getElementById("condition-listbox").style.display = "none";
+        log("[mock] picked condition:", opt.textContent);
+      };
+    });
+
+    log("[mock] page ready");
+  </script>
+</body>
+</html>
