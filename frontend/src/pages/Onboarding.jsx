@@ -1,19 +1,21 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
+import { useAuth } from '../AuthContext'
 
 const STEPS = ['Welcome', 'Profile', 'eBay', 'Etsy', 'Defaults', 'Done']
 
 export default function Onboarding() {
   const navigate = useNavigate()
+  const { user, setOnboarded } = useAuth()
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [ebayConnected, setEbayConnected] = useState(false)
   const [ebayConnecting, setEbayConnecting] = useState(false)
 
   const [form, setForm] = useState({
-    name: '',
-    email: '',
+    name: user?.displayName || '',
+    email: user?.email || '',
     location: '',
     pickup_location: '',
     default_priority: 'balanced',
@@ -21,7 +23,7 @@ export default function Onboarding() {
     default_markdown_percent: 10,
     default_markdown_days: 14,
     default_floor_price: 0,
-    notification_email: '',
+    notification_email: user?.email || '',
   })
 
   function set(field, val) { setForm(f => ({ ...f, [field]: val })) }
@@ -44,7 +46,7 @@ export default function Onboarding() {
     try {
       await api.profile.create({ ...form, notification_email: form.notification_email || form.email })
     } catch { /* profile may already exist — continue anyway */ }
-    localStorage.setItem('snaplist_onboarded', '1')
+    setOnboarded(user)
     setSaving(false)
     navigate('/')
   }
