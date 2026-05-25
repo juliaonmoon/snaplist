@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.config import settings
 from backend.database import get_db
-from backend.services.ai_analysis import analyze_photo, generate_listing_content, research_product
+from backend.services.ai_analysis import analyze_photo, research_product
 from backend.services.ebay_scraper import fetch_sold_prices
 from backend.services.product_identifier import identify_product
 
@@ -93,6 +93,8 @@ async def analyze_item_photo(
             analysis["identified_product"] = better_id.get("identified_product") or analysis.get("identified_product")
             analysis["identification_confidence"] = better_id.get("identification_confidence")
             analysis["identification_source"] = better_id.get("source")
+            # Preserve the Lens match URL for use as product URL fallback below.
+            analysis["lens_match_url"] = better_id.get("match_url")
     except Exception:
         pass
 
@@ -101,6 +103,9 @@ async def analyze_item_photo(
         research = await asyncio.wait_for(research_product(analysis), timeout=10)
     except Exception:
         research = {"official_specs": None, "original_product_url": None, "msrp_original": None, "summary": None}
+    # When the AI research doesn't return a URL, fall back to the Google Lens match URL.
+    if not research.get("original_product_url") and analysis.get("lens_match_url"):
+        research["original_product_url"] = analysis["lens_match_url"]
     analysis["research"] = research
 
     # ── If we identified the product, rewrite the title to lead with it ──
