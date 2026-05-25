@@ -1,14 +1,37 @@
 # SnapList — Session Handoff
 
-_Written: 2026-05-25_
+_Updated: 2026-05-25 (session 2)_
 
 ## ⚡ In-flight work
 
-**Firebase auth is wired up but Vercel env vars still need to be added.**
+**Firebase env vars ARE set in Vercel (deployment Cwuik8GES is live). But Google login is NOT yet working.**
 
-Login page, AuthContext, and routing are all committed and pushed to `claude/funny-meitner-ORmWh`. The Firebase project (`snaplist-a297c`) is created and Google sign-in is enabled. The `frontend/.env` in this cloud container has the keys. Vercel does not yet have the env vars, so the live site still shows "Firebase not configured."
+### Current Problem — Login screen not showing
+When Julia opens `https://frontend-theta-six-98.vercel.app` (even in incognito), she sees the
+**Onboarding screen** ("Welcome to SnapList" + "Get started →") instead of the
+**Login screen** (Google / Facebook buttons).
 
-Next concrete step: Julia adds the 6 `VITE_FIREBASE_*` env vars to Vercel (Settings → Environment Variables), then redeploys. After that, test Google login on the live Vercel URL and confirm the auth flow works end-to-end.
+This is wrong. The expected flow is: unauthenticated → /login → /onboarding → /.
+Seeing /onboarding in incognito means the app thinks she's already authenticated.
+
+**First thing next session: ask Julia what URL the browser shows** when she sees the onboarding screen.
+- If `/onboarding` → app is routing her there (thinks she's logged in — need to check DevTools)
+- If `/login` → Login.jsx is showing this UI (check if it's an old build)
+
+### Debugging steps (do next session)
+1. Ask: "What URL shows in the browser address bar on that screen?"
+2. DevTools → Application → Local Storage — is `snaplist_onboarded` set?
+3. DevTools → Application → IndexedDB → Firebase — is a session cached?
+4. Verify Vercel build has env vars: Project Settings → Environment Variables
+5. Check Vercel build logs for `Cwuik8GES` to confirm VITE_FIREBASE_* were included
+
+### STILL PENDING after login is confirmed working
+- **CRITICAL: Firebase Authorized Domain** — add `frontend-theta-six-98.vercel.app` to
+  Firebase Console → Authentication → Settings → Authorized domains.
+  Without this, Google sign-in popup will fail with "unauthorized domain" error.
+- Connect Vercel to GitHub for auto-deploys
+- eBay developer approval (external)
+- SendGrid API key (for digest emails)
 
 ## ❓ Open decisions / pending
 
