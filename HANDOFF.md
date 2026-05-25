@@ -4,39 +4,57 @@ _Written: 2026-05-25_
 
 ## ⚡ In-flight work
 
-**Waiting on Julia to test the seller-voice rewrite.**
+**Firebase auth is wired up but Vercel env vars still need to be added.**
 
-Last action: restarted backend (`bj9201so8`) after wiring up the seller-voice description builder. Vite frontend still running. Browser-side test not yet done.
+Login page, AuthContext, and routing are all committed and pushed to `claude/funny-meitner-ORmWh`. The Firebase project (`snaplist-a297c`) is created and Google sign-in is enabled. The `frontend/.env` in this cloud container has the keys. Vercel does not yet have the env vars, so the live site still shows "Firebase not configured."
 
-Next concrete step: Julia hard-refreshes the New Listing page, re-uploads the ÖRFJÄLL chair photo (or a fresh photo), and verifies the Description field reads naturally as if she's talking to a buyer — NOT "the chair appears to be" / "Condition:" with colons. If the condition line still sounds AI-ish, the Groq prompt needs another pass.
+Next concrete step: Julia adds the 6 `VITE_FIREBASE_*` env vars to Vercel (Settings → Environment Variables), then redeploys. After that, test Google login on the live Vercel URL and confirm the auth flow works end-to-end.
 
-## ❓ Open decisions
+## ❓ Open decisions / pending
 
-- **None active.** Julia's earlier deferrals still stand:
-  - `ANTHROPIC_API_KEY` skipped (Claude Vision fallback — add later if SerpAPI quota tightens)
-  - eBay onboarding fix deferred ("leave it, fix later")
-  - Per-marketplace pricing deferred (whole-session work)
+- **Vercel env vars** — not set yet. Julia will do this when she has time. Keys are in this handoff doc (see below).
+- **Facebook Login** — not set up yet. Google only for now. Add later via Facebook Developer App.
+- **Firebase Authorized Domains** — `localhost` is already there. When testing on Vercel, add `frontend-theta-six-98.vercel.app` in Firebase Console → Authentication → Settings → Authorized domains.
+- **Backend auth** — still single-user, USER_ID=1 hardcoded in Profile.jsx. Firebase UID not yet wired to the backend profile. Fine for now (Julia is the only user). Future work.
+- **Seller-voice fix** — verified correct via in-container test. Not yet tested with a real photo (needs GROQ_API_KEY in this environment, or test locally).
+- **ANTHROPIC_API_KEY** — still skipped (Claude Vision fallback, add later if SerpAPI quota tightens).
+- **eBay / Etsy / SendGrid** — all still pending/deferred.
 
-## 🆕 New gotchas this session
+## 🔑 Firebase config (snaplist-a297c)
 
-_(All folded into STATUS.md — Seller-voice section + Conventions section. Nothing pending migration.)_
+Add these to Vercel → project → Settings → Environment Variables → redeploy.
+Also add to local `snaplist/frontend/.env` after pulling the branch.
 
-## 📁 Project path
+```
+VITE_FIREBASE_API_KEY=AIzaSyDzcYIkB60OgBkcor4YhVqqdUCeDNkQboE
+VITE_FIREBASE_AUTH_DOMAIN=snaplist-a297c.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=snaplist-a297c
+VITE_FIREBASE_STORAGE_BUCKET=snaplist-a297c.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=634566313776
+VITE_FIREBASE_APP_ID=1:634566313776:web:ab0cbcd1422af819c4eaf5
+```
 
-- **cwd**: `C:\Users\jules\snaplist`
-- **Claude project dir**: `C:\Users\jules\.claude\projects\C--Users-jules\`
+## 🆕 What was done this session
 
-Encoded from `C:\Users\jules` (where the parent shell launched), not from `snaplist/`. Resume should `cd snaplist` first.
+1. **Seller-voice fix verified** — description builder in `routes/analyze.py` confirmed correct. Output starts "Selling my X.", no banned phrases, reads as Julia talking to a buyer.
+2. **Initial Alembic migration generated** — `alembic/versions/27fcfaadbc1c_initial_schema.py` created and applied. DB schema now in version control.
+3. **Google + Facebook social login added**:
+   - `frontend/src/firebase.js` — Firebase init (only if VITE_FIREBASE_API_KEY is set)
+   - `frontend/src/AuthContext.jsx` — auth state, isOnboarded/setOnboarded scoped per UID
+   - `frontend/src/pages/Login.jsx` — Google + Facebook buttons, honest "not configured" fallback
+   - `frontend/src/App.jsx` — routes: unauthenticated → /login, new user → /onboarding, returning → /
+   - `frontend/src/pages/Onboarding.jsx` — pre-fills name/email from social provider
+   - `frontend/src/pages/Profile.jsx` — shows provider avatar photo, logout calls Firebase signOut()
+   - `frontend/.env.example` — documents required VITE_FIREBASE_* keys
 
-## 🚦 Services state at handoff
+## 🚦 Services state (cloud container)
 
-- Backend `localhost:8000` — ✅ up (bg task `bj9201so8`, no `--reload`)
-- Frontend `localhost:5174` — ✅ up (bg task `bvc5xdeko`, Vite HMR active)
-- Postgres — ✅ assumed up
-- `backend/data/id_cache.json` — present, holds last successful Lens identification (sha256 → result)
+- Backend `localhost:8000` — ✅ up (uvicorn, no --reload)
+- Frontend `localhost:5174` — ✅ up (Vite)
+- Postgres — ✅ up (pg_ctlcluster 16 main)
+- Note: cloud container ports are not browser-accessible. Use Vercel for live testing.
 
-## 📜 Transcript path
+## 📁 Project path (cloud container)
 
-`C:\Users\jules\.claude\projects\C--Users-jules\d2a4d04d-1078-43c0-89cf-d41d27893f0f.jsonl`
-
-Grep only on demand — do not read eagerly.
+- **cwd**: `/home/user/snaplist`
+- **branch**: `claude/funny-meitner-ORmWh`
