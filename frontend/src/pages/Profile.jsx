@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react'
+import { signOut } from 'firebase/auth'
 import { api } from '../api'
+import { useAuth } from '../AuthContext'
+import { auth, configured } from '../firebase'
 
 const USER_ID = 1
 
 export default function Profile() {
+  const { user, clearOnboarded } = useAuth()
   const [profile, setProfile] = useState(null)
   const [saving, setSaving]   = useState(false)
   const [saved, setSaved]     = useState(false)
@@ -49,7 +53,10 @@ export default function Profile() {
       </div>
 
       <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <div className="avatar">{form.name?.[0] ?? 'J'}</div>
+        {user?.photoURL
+          ? <img src={user.photoURL} alt="" style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover' }} />
+          : <div className="avatar">{form.name?.[0] ?? 'J'}</div>
+        }
         <div>
           <div style={{ fontWeight: 700, fontSize: 18 }}>{form.name}</div>
           <div style={{ fontSize: 13, color: '#64748b' }}>{form.location}</div>
@@ -139,10 +146,11 @@ export default function Profile() {
       <div style={{ padding: '16px' }}>
         <button
           className="btn"
-          onClick={() => {
+          onClick={async () => {
             if (!confirm('Log out of SnapList?')) return
-            localStorage.removeItem('snaplist_onboarded')
-            window.location.href = '/onboarding'
+            clearOnboarded(user)
+            if (configured && auth) await signOut(auth)
+            window.location.href = '/login'
           }}
           style={{ width: '100%', background: '#fff', color: '#ef4444', border: '1px solid #fecaca' }}
         >

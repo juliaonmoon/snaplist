@@ -1,17 +1,19 @@
-import { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { AuthProvider, useAuth } from './AuthContext'
 import Dashboard from './pages/Dashboard'
 import NewListing from './pages/NewListing'
 import ListingDetail from './pages/ListingDetail'
 import Profile from './pages/Profile'
 import Onboarding from './pages/Onboarding'
+import Login from './pages/Login'
 import './index.css'
 
 function BottomNav() {
   const navigate = useNavigate()
   const location = useLocation()
   const path = location.pathname
-  if (path === '/onboarding') return null
+  if (path === '/onboarding' || path === '/login') return null
 
   return (
     <nav className="bottom-nav">
@@ -39,29 +41,39 @@ function BottomNav() {
 }
 
 function AppRoutes() {
+  const { user, isOnboarded } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [checked, setChecked] = useState(false)
 
   useEffect(() => {
-    // On first load, send new users to onboarding
-    const onboarded = localStorage.getItem('snaplist_onboarded')
-    if (!onboarded && location.pathname !== '/onboarding') {
-      navigate('/onboarding', { replace: true })
-    }
-    setChecked(true)
-  }, [])
+    if (user === undefined) return // still loading auth state
 
-  if (!checked) return null
+    if (!user) {
+      if (location.pathname !== '/login') navigate('/login', { replace: true })
+      return
+    }
+
+    if (!isOnboarded(user)) {
+      if (location.pathname !== '/onboarding') navigate('/onboarding', { replace: true })
+      return
+    }
+
+    if (location.pathname === '/login' || location.pathname === '/onboarding') {
+      navigate('/', { replace: true })
+    }
+  }, [user, location.pathname])
+
+  if (user === undefined) return null
 
   return (
     <>
       <Routes>
-        <Route path="/onboarding" element={<Onboarding />} />
-        <Route path="/"           element={<Dashboard />} />
-        <Route path="/new"        element={<NewListing />} />
+        <Route path="/login"       element={<Login />} />
+        <Route path="/onboarding"  element={<Onboarding />} />
+        <Route path="/"            element={<Dashboard />} />
+        <Route path="/new"         element={<NewListing />} />
         <Route path="/listing/:id" element={<ListingDetail />} />
-        <Route path="/profile"    element={<Profile />} />
+        <Route path="/profile"     element={<Profile />} />
       </Routes>
       <BottomNav />
     </>
@@ -71,9 +83,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="app">
-        <AppRoutes />
-      </div>
+      <AuthProvider>
+        <div className="app">
+          <AppRoutes />
+        </div>
+      </AuthProvider>
     </BrowserRouter>
   )
 }
