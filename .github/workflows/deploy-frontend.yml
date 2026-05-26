@@ -1,0 +1,63 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [main, claude/hopeful-franklin-UYnIB]
+    paths: [frontend/**]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build
+        run: npm run build
+        working-directory: frontend
+        env:
+          GITHUB_PAGES: "true"
+          VITE_FIREBASE_API_KEY: AIzaSyDzcYIkB60OgBkcor4YhVqqdUCeDNkQboE
+          VITE_FIREBASE_AUTH_DOMAIN: snaplist-a297c.firebaseapp.com
+          VITE_FIREBASE_PROJECT_ID: snaplist-a297c
+          VITE_FIREBASE_STORAGE_BUCKET: snaplist-a297c.firebasestorage.app
+          VITE_FIREBASE_MESSAGING_SENDER_ID: "634566313776"
+          VITE_FIREBASE_APP_ID: 1:634566313776:web:ab0cbcd1422af819c4eaf5
+
+      - name: Add 404 fallback for SPA routing
+        run: cp frontend/dist/index.html frontend/dist/404.html
+
+      - uses: actions/configure-pages@v4
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
