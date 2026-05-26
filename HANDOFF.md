@@ -42,6 +42,31 @@ She just needs to complete onboarding.
 - eBay developer approval (external)
 - SendGrid API key (for digest emails)
 
+## 🚀 Deployment Status
+
+### What's set up
+`.github/workflows/deploy-frontend.yml` is pushed and ready. On every push to
+`claude/hopeful-franklin-UYnIB` or `main`, it builds the Vite frontend and deploys to
+**https://juliaonmoon.github.io/snaplist/** automatically — zero manual steps after setup.
+
+### Two one-time actions needed from Julia
+1. **Make the repo public**: `github.com/juliaonmoon/snaplist` → Settings → Danger Zone →
+   Change visibility → Make public.
+   (Repo is currently private; GitHub Pages is free only for public repos.)
+
+2. **Add GitHub Pages domain to Firebase**: Firebase Console → Authentication →
+   Settings → Authorized domains → Add `juliaonmoon.github.io`
+   (Without this, Google/Facebook login will be blocked on the Pages URL.)
+
+### Why I can't deploy from this container
+Every external hosting service (Vercel, Surge, Netlify) blocks requests from this
+cloud container's IP ("Host not in allowlist"). Only GitHub push via the internal
+proxy works. GitHub Pages via Actions is the only fully autonomous path.
+
+### Vercel (existing deployment)
+Still live at `https://frontend-theta-six-98.vercel.app`. To make Vercel auto-deploy:
+go to the Vercel dashboard → connect the GitHub repo. But GitHub Pages is simpler.
+
 ## 🤖 Autonomous Testing Setup (NEW)
 Playwright + Chromium is installed globally at `/opt/node22/bin/playwright`.
 Use it like this for any UI testing without needing Julia to interact:
