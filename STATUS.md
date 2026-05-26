@@ -1,6 +1,6 @@
 # SnapList — Current Status
 
-_Last updated: 2026-05-25 (seller-voice rewrite)_
+_Last updated: 2026-05-26_
 
 ## 🎯 Product overview
 
@@ -12,6 +12,35 @@ _Last updated: 2026-05-25 (seller-voice rewrite)_
 - **Secondary**: eBay (API when approved), Etsy (OAuth in v0.2)
 - **Stack**: FastAPI + Postgres backend, React PWA frontend, Chrome extension MV3, Groq vision for AI
 - **Roadmap**: v0.1 = FB autofill + eBay/Etsy stubs (now). v0.2 = real eBay API, Etsy OAuth, Kijiji.
+
+## ✅ Firebase Auth + Login page
+
+Google and Facebook login are wired up end-to-end. Firebase project: `snaplist-a297c`.
+
+**Login page** (`frontend/src/pages/Login.jsx`):
+- Shows feature list (welcome screen) + auth buttons
+- Two modes toggled by a link: "Get started" (new users) / "Log in" (returning users)
+- Both modes use the same Google + Facebook OAuth — Google/Firebase handles new vs. returning automatically
+- Gracefully shows "Firebase not configured" if `VITE_FIREBASE_*` env vars are missing
+
+**Auth flow**: unauthenticated → `/login` → Google/Facebook popup → onboarded check → `/onboarding` (new) or `/` (returning)
+
+**Authorized domains** — must be added in Firebase Console → Authentication → Settings → Authorized domains:
+- `localhost` — already there
+- `frontend-theta-six-98.vercel.app` — needs confirmation
+- `juliaonmoon.github.io` — add when GitHub Pages goes live
+
+## ✅ Deployment — GitHub Actions (auto-deploy on push)
+
+`.github/workflows/deploy-frontend.yml` builds the Vite frontend and deploys to GitHub Pages on every push to `main` or `claude/hopeful-franklin-UYnIB` that touches `frontend/`.
+
+Target URL: **https://juliaonmoon.github.io/snaplist/**
+
+Two one-time steps needed before this activates:
+1. Make repo public (GitHub Settings → Danger Zone → Change visibility)
+2. Add `juliaonmoon.github.io` to Firebase authorized domains
+
+Current fallback: Vercel at https://frontend-theta-six-98.vercel.app (manual redeploy).
 
 ## ✅ What works (verified end-to-end on real Facebook)
 
@@ -107,9 +136,12 @@ Frontend (`NewListing.jsx`) no longer assembles description client-side — it j
 - **Windows terminal can't render `Ö`/`Ä`** — when debugging via `curl | python -c`, characters show as `Ã–`, `Ã„`, or `�`. The data in the FastAPI response is correct UTF-8 (verified by inspecting raw bytes `\xc3\x96`); only the Windows console rendering is broken. The browser displays them correctly. Don't waste time "fixing" what isn't broken.
 - **Don't cache failed identifications** — `product_identifier.py:identify_product()` only caches when `identified_product` is a real value (not None, not the string "null"). Otherwise one bad search permanently masks a photo.
 
-## 🌐 Live demo (frontend only)
+## 🌐 Live URLs
 
-Vercel: https://frontend-theta-six-98.vercel.app — runs against mock data when backend unreachable.
+| URL | Status | Notes |
+|-----|--------|-------|
+| https://frontend-theta-six-98.vercel.app | Live | Vercel, manual redeploy |
+| https://juliaonmoon.github.io/snaplist/ | Pending | GitHub Pages, auto-deploy ready — needs repo made public |
 
 ## 🧪 Quick smoke tests
 
