@@ -11,6 +11,11 @@ export default function Onboarding() {
   const [ebayConnected, setEbayConnected] = useState(false)
   const [ebayConnecting, setEbayConnecting] = useState(false)
 
+  const [showLogin, setShowLogin] = useState(false)
+  const [loginEmail, setLoginEmail] = useState('')
+  const [loginError, setLoginError] = useState('')
+  const [loginLoading, setLoginLoading] = useState(false)
+
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -45,8 +50,36 @@ export default function Onboarding() {
       await api.profile.create({ ...form, notification_email: form.notification_email || form.email })
     } catch { /* profile may already exist — continue anyway */ }
     localStorage.setItem('snaplist_onboarded', '1')
+    localStorage.setItem('snaplist_user_email', form.email)
     setSaving(false)
     navigate('/')
+  }
+
+  async function handleLogin() {
+    const email = loginEmail.trim().toLowerCase()
+    if (!email) return
+    setLoginLoading(true)
+    setLoginError('')
+    try {
+      const stored = localStorage.getItem('snaplist_user_email')
+      if (stored && stored.toLowerCase() === email) {
+        localStorage.setItem('snaplist_onboarded', '1')
+        navigate('/')
+        return
+      }
+      const profile = await api.profile.get(1)
+      if (profile?.email?.toLowerCase() === email) {
+        localStorage.setItem('snaplist_onboarded', '1')
+        localStorage.setItem('snaplist_user_email', profile.email)
+        navigate('/')
+        return
+      }
+      setLoginError('No account found with that email.')
+    } catch {
+      setLoginError('Could not reach the server. Check your connection.')
+    } finally {
+      setLoginLoading(false)
+    }
   }
 
   function simulateEbayOAuth() {
@@ -71,7 +104,7 @@ export default function Onboarding() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 24px 40px' }}>
 
         {/* ── Step 0: Welcome ── */}
-        {step === 0 && (
+        {step === 0 && !showLogin && (
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 72, marginBottom: 16 }}>📸</div>
             <h1 style={{ fontSize: 32, fontWeight: 800, marginBottom: 10 }}>Welcome to SnapList</h1>
@@ -95,6 +128,47 @@ export default function Onboarding() {
             <button className="btn btn-primary" style={{ marginTop: 32 }} onClick={() => setStep(1)}>
               Get started →
             </button>
+            <button className="btn btn-outline" style={{ marginTop: 12 }} onClick={() => setShowLogin(true)}>
+              Log in
+            </button>
+          </div>
+        )}
+
+        {/* ── Login view (shown from step 0) ── */}
+        {step === 0 && showLogin && (
+          <div>
+            <button onClick={() => { setShowLogin(false); setLoginError('') }}
+              style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', marginBottom: 16 }}>←</button>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>👋</div>
+            <h2 style={{ fontSize: 26, fontWeight: 700, marginBottom: 6 }}>Welcome back</h2>
+            <p style={{ fontSize: 14, color: '#64748b', marginBottom: 28, lineHeight: 1.5 }}>
+              Enter the email you used when you set up SnapList.
+            </p>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>Email</div>
+              <input
+                className="input"
+                type="email"
+                placeholder="you@email.com"
+                value={loginEmail}
+                onChange={e => setLoginEmail(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                autoFocus
+              />
+            </div>
+            {loginError && (
+              <div style={{ fontSize: 13, color: '#dc2626', marginBottom: 12 }}>{loginError}</div>
+            )}
+            <button className="btn btn-primary" onClick={handleLogin} disabled={loginLoading || !loginEmail.trim()}>
+              {loginLoading ? 'Checking…' : 'Log in →'}
+            </button>
+            <div style={{ marginTop: 20, fontSize: 13, color: '#94a3b8', textAlign: 'center' }}>
+              New here?{' '}
+              <button style={{ background: 'none', border: 'none', color: '#22c55e', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}
+                onClick={() => { setShowLogin(false); setLoginError('') }}>
+                Get started instead
+              </button>
+            </div>
           </div>
         )}
 
