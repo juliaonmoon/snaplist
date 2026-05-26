@@ -1,37 +1,65 @@
 # SnapList — Session Handoff
 
-_Updated: 2026-05-25 (session 2)_
+_Updated: 2026-05-26 (session 2)_
 
 ## ⚡ In-flight work
 
-**Firebase env vars ARE set in Vercel (deployment Cwuik8GES is live). But Google login is NOT yet working.**
+**Firebase env vars ARE set in Vercel. Login code is confirmed correct locally. Need to diagnose Vercel behavior.**
 
-### Current Problem — Login screen not showing
-When Julia opens `https://frontend-theta-six-98.vercel.app` (even in incognito), she sees the
-**Onboarding screen** ("Welcome to SnapList" + "Get started →") instead of the
-**Login screen** (Google / Facebook buttons).
+### What was proven with Playwright (autonomous browser testing)
+- **Without Firebase env vars** → app correctly shows "Firebase not configured" at `/login` ✅
+- **With Firebase env vars** → app correctly shows Google + Facebook buttons at `/login` ✅
+- So the login code is NOT the problem.
 
-This is wrong. The expected flow is: unauthenticated → /login → /onboarding → /.
-Seeing /onboarding in incognito means the app thinks she's already authenticated.
+### Current mystery — Vercel shows Onboarding screen instead of Login
+Julia opens `https://frontend-theta-six-98.vercel.app` (even in incognito) and sees
+**"Welcome to SnapList" with "Get started →"** — the onboarding screen (`/onboarding`),
+not the login screen.
 
-**First thing next session: ask Julia what URL the browser shows** when she sees the onboarding screen.
-- If `/onboarding` → app is routing her there (thinks she's logged in — need to check DevTools)
-- If `/login` → Login.jsx is showing this UI (check if it's an old build)
+**Most likely explanation (to confirm next session):**
+The app is routing to `/onboarding` which means it thinks Julia IS logged in.
+This could mean she has a persisted Google auth session in the incognito window's
+IndexedDB from a prior attempt (all incognito tabs in the same Chrome session share storage).
+If she previously clicked "Continue with Google" and Firebase auth partially worked,
+the session could be cached — and she's now logged in but not onboarded.
 
-### Debugging steps (do next session)
-1. Ask: "What URL shows in the browser address bar on that screen?"
-2. DevTools → Application → Local Storage — is `snaplist_onboarded` set?
-3. DevTools → Application → IndexedDB → Firebase — is a session cached?
-4. Verify Vercel build has env vars: Project Settings → Environment Variables
-5. Check Vercel build logs for `Cwuik8GES` to confirm VITE_FIREBASE_* were included
+**This could actually be GOOD news** — it may mean Google login IS working.
+She just needs to complete onboarding.
 
-### STILL PENDING after login is confirmed working
-- **CRITICAL: Firebase Authorized Domain** — add `frontend-theta-six-98.vercel.app` to
-  Firebase Console → Authentication → Settings → Authorized domains.
-  Without this, Google sign-in popup will fail with "unauthorized domain" error.
+### First things to try next session
+1. On the Vercel app: **check the URL bar** — does it say `/onboarding`?
+2. If yes — just tap "Get started" and complete the onboarding flow! May already be logged in.
+3. If onboarding completes → great, Google login worked earlier without her realizing it.
+4. If onboarding fails (can't complete) → check DevTools → Application → IndexedDB → Firebase
+
+### If Google login is NOT working yet
+- Firebase authorized domain still needed: Firebase Console → Authentication →
+  Settings → Authorized domains → Add `frontend-theta-six-98.vercel.app`
+- To force a fresh login: DevTools → Application → clear site data, then reload
+
+### Other pending work
 - Connect Vercel to GitHub for auto-deploys
 - eBay developer approval (external)
 - SendGrid API key (for digest emails)
+
+## 🤖 Autonomous Testing Setup (NEW)
+Playwright + Chromium is installed globally at `/opt/node22/bin/playwright`.
+Use it like this for any UI testing without needing Julia to interact:
+
+```js
+const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const browser = await chromium.launch({ headless: true });
+const context = await browser.newContext({ ignoreHTTPSErrors: true });
+const page = await context.newPage();
+await page.goto('http://localhost:5175', { waitUntil: 'networkidle' });
+// check url, click buttons, fill forms, etc.
+```
+
+**Note:** Vercel blocks requests from this cloud container (403 "Host not in allowlist").
+Always test against the local dev server (`http://localhost:5175`).
+To start the dev server: `cd /home/user/snaplist/frontend && node_modules/.bin/vite --port 5175 &`
+Frontend `node_modules` must be installed first: `cd frontend && npm install`
+Firebase `.env` is at `frontend/.env` (keys already written — see below).
 
 ## ❓ Open decisions / pending
 
