@@ -5,6 +5,7 @@ import { auth, configured } from '../firebase'
 export default function Login() {
   const [loading, setLoading] = useState(null) // 'google' | 'facebook' | null
   const [error, setError] = useState(null)
+  const [mode, setMode] = useState('start') // 'start' | 'login'
 
   async function signIn(provider) {
     setLoading(provider)
@@ -32,15 +33,42 @@ export default function Login() {
     )
   }
 
+  const isLogin = mode === 'login'
+
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 24px 48px', background: '#f8fafc', maxWidth: 430, margin: '0 auto' }}>
-      <div style={{ textAlign: 'center', marginBottom: 48 }}>
-        <div style={{ fontSize: 64, marginBottom: 16 }}>📸</div>
-        <h1 style={{ fontSize: 32, fontWeight: 800, marginBottom: 8 }}>SnapList</h1>
-        <p style={{ fontSize: 16, color: '#64748b' }}>Sign in to continue</p>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: '#f8fafc', maxWidth: 430, margin: '0 auto' }}>
+
+      {/* Header */}
+      <div style={{ textAlign: 'center', padding: '48px 24px 28px' }}>
+        <div style={{ fontSize: 60, marginBottom: 12 }}>📸</div>
+        <h1 style={{ fontSize: 30, fontWeight: 800, marginBottom: 8 }}>SnapList</h1>
+        <p style={{ fontSize: 15, color: '#64748b', lineHeight: 1.5 }}>
+          Snap a photo of anything you want to sell.<br />AI writes the listing. You approve.
+        </p>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Feature list */}
+      <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {[
+          ['📸', 'One photo → complete listing'],
+          ['🤖', 'AI sets the title, price & description'],
+          ['🛍️', 'Posts to eBay, Etsy, Facebook & Kijiji'],
+          ['📬', 'Daily digest keeps everything on track'],
+        ].map(([icon, text]) => (
+          <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'white', borderRadius: 12, padding: '11px 14px', border: '1px solid #e2e8f0' }}>
+            <span style={{ fontSize: 20 }}>{icon}</span>
+            <span style={{ fontSize: 13, fontWeight: 500 }}>{text}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Auth section */}
+      <div style={{ padding: '24px 24px 48px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+        <div style={{ textAlign: 'center', fontSize: 15, fontWeight: 700, color: '#1e293b', marginBottom: 2 }}>
+          {isLogin ? 'Welcome back' : 'Get started — it\'s free'}
+        </div>
+
         <button
           onClick={() => signIn('google')}
           disabled={Boolean(loading)}
@@ -54,7 +82,7 @@ export default function Login() {
           }}
         >
           <GoogleIcon />
-          {loading === 'google' ? 'Signing in…' : 'Continue with Google'}
+          {loading === 'google' ? 'Signing in…' : isLogin ? 'Log in with Google' : 'Get started with Google'}
         </button>
 
         <button
@@ -70,15 +98,27 @@ export default function Login() {
           }}
         >
           <FacebookIcon />
-          {loading === 'facebook' ? 'Signing in…' : 'Continue with Facebook'}
+          {loading === 'facebook' ? 'Signing in…' : isLogin ? 'Log in with Facebook' : 'Get started with Facebook'}
         </button>
-      </div>
 
-      {error && (
-        <div style={{ marginTop: 20, padding: '12px 14px', background: '#fee2e2', borderRadius: 10, fontSize: 13, color: '#991b1b', lineHeight: 1.5 }}>
-          {error}
-        </div>
-      )}
+        <button
+          onClick={() => setMode(isLogin ? 'start' : 'login')}
+          disabled={Boolean(loading)}
+          style={{
+            background: 'none', border: 'none', color: '#64748b', fontSize: 13,
+            cursor: 'pointer', textAlign: 'center', padding: '4px 0',
+            textDecoration: 'underline',
+          }}
+        >
+          {isLogin ? "Don't have an account? Get started →" : 'Already have an account? Log in →'}
+        </button>
+
+        {error && (
+          <div style={{ padding: '12px 14px', background: '#fee2e2', borderRadius: 10, fontSize: 13, color: '#991b1b', lineHeight: 1.5 }}>
+            {error}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
