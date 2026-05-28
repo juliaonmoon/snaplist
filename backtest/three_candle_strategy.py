@@ -20,12 +20,11 @@ import numpy as np
 import pandas as pd
 from tabulate import tabulate
 
-# ── Config ─────────────────────────────────────────────────────────────────────
-TWELVE_DATA_API_KEY = "e5eb42e0497a459f8a2586ee45f3e468"
-SYMBOL          = "TSLA"
-HOLD_DAYS       = 5     # days to hold after signal fires
-STOP_LOSS_PCT   = 0.03  # 3 %
-TAKE_PROFIT_PCT = 0.06  # 6 %
+from config import (
+    TWELVE_DATA_API_KEY, SYMBOL, INTERVAL,
+    HOLD_DAYS, STOP_LOSS_PCT, TAKE_PROFIT_PCT,
+    FETCH_BARS, WINDOW_BARS,
+)
 
 
 # ── Data fetching ──────────────────────────────────────────────────────────────
@@ -37,7 +36,7 @@ def fetch_from_twelvedata() -> pd.DataFrame:
     params = {
         "symbol": SYMBOL,
         "interval": "1day",
-        "outputsize": 400,
+        "outputsize": FETCH_BARS,
         "apikey": TWELVE_DATA_API_KEY,
     }
     resp = requests.get(url, params=params, timeout=15)
@@ -54,7 +53,7 @@ def fetch_from_twelvedata() -> pd.DataFrame:
     return df
 
 
-def generate_synthetic_tsla(n_days: int = 600, seed: int | None = None) -> pd.DataFrame:
+def generate_synthetic_tsla(n_days: int = 600, seed=None) -> pd.DataFrame:
     """
     Simulate TSLA-like daily OHLCV bars.
     Parameters tuned to TSLA's historical volatility (~3 % daily, ~0.05 % drift).
@@ -96,12 +95,11 @@ def generate_synthetic_tsla(n_days: int = 600, seed: int | None = None) -> pd.Da
 
 def pick_random_90day_slice(df: pd.DataFrame) -> pd.DataFrame:
     """Randomly select ~65 consecutive trading days (≈ 90 calendar days)."""
-    min_rows = 65
-    if len(df) <= min_rows + HOLD_DAYS:
+    if len(df) <= WINDOW_BARS + HOLD_DAYS:
         return df.reset_index(drop=True)
-    max_start = len(df) - min_rows - HOLD_DAYS
+    max_start = len(df) - WINDOW_BARS - HOLD_DAYS
     start     = random.randint(0, max_start)
-    return df.iloc[start: start + min_rows + HOLD_DAYS].reset_index(drop=True)
+    return df.iloc[start: start + WINDOW_BARS + HOLD_DAYS].reset_index(drop=True)
 
 
 # ── Candle helpers ─────────────────────────────────────────────────────────────
